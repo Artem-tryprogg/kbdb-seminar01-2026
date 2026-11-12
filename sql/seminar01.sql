@@ -36,7 +36,14 @@ order  by s.name, u.id;
 -- Ожидается: 7 строк; GPA-1 → 5, GPA-4 → 0
 -- ---------------------------------------------------------------------
 -- Задача 2
-
+select
+    u.id,
+    u.model,
+    count(s.id) as sensor_count
+from unit u
+LEFT JOIN sensor s on s.unit_id = u.id
+GROUP BY u.id, u.model
+ORDER BY u.id
 
 
 -- ---------------------------------------------------------------------
@@ -44,7 +51,15 @@ order  by s.name, u.id;
 -- Ожидается: 4 строки; GPA-2 → 66.1
 -- ---------------------------------------------------------------------
 -- Задача 3
-
+select 
+    u.id,
+    round(avg(t.value), 1) as avg_temp
+from unit as u
+join sensor as s on s.unit_id = u.id
+join telemetry as t on t.sensor_id = s.id
+where s.kind = 'temp'
+group by u.id, u.model
+order by u.id
 
 
 -- ---------------------------------------------------------------------
@@ -52,6 +67,10 @@ order  by s.name, u.id;
 -- Ожидается: 1 строка — TE-302 (GPA-2), ~88.3
 -- ---------------------------------------------------------------------
 -- Задача 4
+select 
+    s.id,
+    s.kind,
+    max(t.value) as max_value
 
 
 
