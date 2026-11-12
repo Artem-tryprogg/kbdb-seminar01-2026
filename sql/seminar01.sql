@@ -70,8 +70,15 @@ order by u.id
 select 
     s.id,
     s.kind,
+    u.id,
     max(t.value) as max_value
-
+from sensor as s
+join unit as u on s.unit_id = u.id
+join telemetry as t on t.sensor_id = s.id
+where s.kind = 'temp'
+group by s.id, u.id
+having max(t.value) > 85
+order by s.id
 
 
 -- ---------------------------------------------------------------------
@@ -79,7 +86,16 @@ select
 -- Ожидается: 25 строк; 11:00 → 73.4, 13:00 → 83.8, 14:00 → 85.5
 -- ---------------------------------------------------------------------
 -- Задача 5
-
+select 
+    date_trunc('hour', t.ts) as hour,
+    round(avg(t.value), 1) as avg_temp
+from unit u
+join sensor s on s.unit_id = u.id
+join telemetry t on t.sensor_id = s.id
+where u.id = 'GPA-2'
+  and s.kind = 'temp'
+group by date_trunc('hour', t.ts)
+order by hour;
 
 
 -- ---------------------------------------------------------------------
@@ -87,7 +103,15 @@ select
 -- Ожидается: 10 строк «как есть». Почему не 9? Посмотрите на severity внимательно.
 -- ---------------------------------------------------------------------
 -- Задача 6
-
+select 
+    st.name as station_name, 
+    e.severity, 
+    count(*) as cnt
+from event e
+join unit u on u.id = e.unit_id
+join station st on st.id = u.station_id
+group by st.name, e.severity
+order by st.name, e.severity;
 
 
 -- ---------------------------------------------------------------------
@@ -95,7 +119,26 @@ select
 -- Ожидается: 5 агрегатов. Если у вас 6 — вы не учли регистр в severity.
 -- ---------------------------------------------------------------------
 -- Задача 7
+select u.id,
+    u.model
+from unit u
+where not exists (
+    select 1
+    from event e
+    where e.unit_id = u.id
+      and e.severity in ('alarm', 'unplanned_stop')
+)
+order by u.id;
 
+
+select u.id,
+    u.model
+from unit u
+left join event e 
+    on e.unit_id = u.id 
+   and e.severity in ('alarm', 'unplanned_stop')
+where e.id is null
+order by u.id;
 
 
 -- =====================================================================
