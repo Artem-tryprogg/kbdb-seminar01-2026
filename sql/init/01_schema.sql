@@ -16,14 +16,14 @@ comment on table station is 'Площадка (станция), на котор�
 
 -- ---------- Агрегаты ----------
 create table unit (
-    id            text primary key,              -- человекочитаемый код: GPA-2, P-1 ...
+    id            text primary key,              -- человекочитаемый код: K-2, P-1 ...
     station_id    int  not null references station(id),
     kind          text not null,                 -- gas_compressor / pump / cooler
     model         text not null,
     commissioned  date not null,
     status        text not null default 'in_service'   -- in_service / reserve / decommissioned
 );
-comment on table unit is 'Единица оборудования: газоперекачивающий агрегат, насос, АВО';
+comment on table unit is 'Единица оборудования: газоперекачивающий агрегат, насос, воздушный охладитель';
 
 -- ---------- Датчики ----------
 create table sensor (
@@ -55,7 +55,7 @@ create table event (
 );
 comment on table event is 'Журнал событий и аварий (данные «как есть», из SCADA)';
 
--- ---------- Ремонты и ТО ----------
+-- ---------- Ремонты и обслуживание ----------
 create table maintenance (
     id            serial primary key,
     unit_id       text not null references unit(id),
