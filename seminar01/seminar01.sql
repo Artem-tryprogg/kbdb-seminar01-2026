@@ -1,6 +1,6 @@
 -- =====================================================================
 --  Семинар 1 — ваши решения
---  ФИО: ______________________   Группа: ________
+--  ФИО: Кобяк Артём Вячелсавович  Группа: ИУ1-72Б
 --
 --  Прогнать весь файл:  make run
 --  Открыть консоль:     make psql
@@ -22,7 +22,7 @@ set timezone = 'Europe/Moscow';
 
 -- ---------------------------------------------------------------------
 -- Задача 1. Агрегаты и площадки
--- Ожидается: 7 строк; первыми идут P-1, P-2 (Восточная)
+-- Ожидается: 7 строк; первыми идут P-1, P-2 (КС Восточная)
 -- ---------------------------------------------------------------------
 -- Задача 1
 select u.id, u.model, s.name as station
@@ -33,34 +33,69 @@ order  by s.name, u.id;
 
 -- ---------------------------------------------------------------------
 -- Задача 2. Сколько датчиков на агрегате
--- Ожидается: 7 строк; K-1 → 5, K-4 → 0
+-- Ожидается: 7 строк; GPA-1 → 5, GPA-4 → 0
 -- ---------------------------------------------------------------------
 -- Задача 2
-
+select
+    u.id,
+    u.model,
+    count(s.id) as sensor_count
+from unit u
+LEFT JOIN sensor s on s.unit_id = u.id
+GROUP BY u.id, u.model
+ORDER BY u.id
 
 
 -- ---------------------------------------------------------------------
 -- Задача 3. Средняя температура за сутки (датчики kind = 'temp')
--- Ожидается: 4 строки; K-2 → 66.1
+-- Ожидается: 4 строки; GPA-2 → 66.1
 -- ---------------------------------------------------------------------
 -- Задача 3
-
+select 
+    u.id,
+    round(avg(t.value), 1) as avg_temp
+from unit as u
+join sensor as s on s.unit_id = u.id
+join telemetry as t on t.sensor_id = s.id
+where s.kind = 'temp'
+group by u.id, u.model
+order by u.id
 
 
 -- ---------------------------------------------------------------------
 -- Задача 4. Датчики температуры с максимумом > 85
--- Ожидается: 1 строка — TE-302 (K-2), ~88.3
+-- Ожидается: 1 строка — TE-302 (GPA-2), ~88.3
 -- ---------------------------------------------------------------------
 -- Задача 4
-
+select 
+    s.id,
+    s.kind,
+    u.id,
+    max(t.value) as max_value
+from sensor as s
+join unit as u on s.unit_id = u.id
+join telemetry as t on t.sensor_id = s.id
+where s.kind = 'temp'
+group by s.id, u.id
+having max(t.value) > 85
+order by s.id
 
 
 -- ---------------------------------------------------------------------
--- Задача 5. Почасовой профиль температуры подшипника K-2
+-- Задача 5. Почасовой профиль температуры подшипника GPA-2
 -- Ожидается: 25 строк; 11:00 → 73.4, 13:00 → 83.8, 14:00 → 85.5
 -- ---------------------------------------------------------------------
 -- Задача 5
-
+select 
+    date_trunc('hour', t.ts) as hour,
+    round(avg(t.value), 1) as avg_temp
+from unit u
+join sensor s on s.unit_id = u.id
+join telemetry t on t.sensor_id = s.id
+where u.id = 'GPA-2'
+  and s.kind = 'temp'
+group by date_trunc('hour', t.ts)
+order by hour;
 
 
 -- ---------------------------------------------------------------------
@@ -68,7 +103,15 @@ order  by s.name, u.id;
 -- Ожидается: 10 строк «как есть». Почему не 9? Посмотрите на severity внимательно.
 -- ---------------------------------------------------------------------
 -- Задача 6
-
+select 
+    st.name as station_name, 
+    e.severity, 
+    count(*) as cnt
+from event e
+join unit u on u.id = e.unit_id
+join station st on st.id = u.station_id
+group by st.name, e.severity
+order by st.name, e.severity;
 
 
 -- ---------------------------------------------------------------------
@@ -76,7 +119,26 @@ order  by s.name, u.id;
 -- Ожидается: 5 агрегатов. Если у вас 6 — вы не учли регистр в severity.
 -- ---------------------------------------------------------------------
 -- Задача 7
+select u.id,
+    u.model
+from unit u
+where not exists (
+    select 1
+    from event e
+    where e.unit_id = u.id
+      and e.severity in ('alarm', 'unplanned_stop')
+)
+order by u.id;
 
+
+select u.id,
+    u.model
+from unit u
+left join event e 
+    on e.unit_id = u.id 
+   and e.severity in ('alarm', 'unplanned_stop')
+where e.id is null
+order by u.id;
 
 
 -- =====================================================================
@@ -95,7 +157,7 @@ order  by s.name, u.id;
 
 
 -- Задача 10*. Ремонт в течение 48 ч после каждой внеплановой остановки
--- Ожидается: P-2 → через 30.8 ч, K-2 → через 4.7 ч
+-- Ожидается: P-2 → через 30.8 ч, GPA-2 → через 4.7 ч
 -- Задача 10*
 
 
